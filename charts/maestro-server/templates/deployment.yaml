@@ -72,6 +72,9 @@ spec:
         - "--structured-logs"
         - "--port=5432"
         - {{ .Values.database.cloudSqlProxy.instanceConnectionName | quote }}
+        {{- if .Values.database.cloudSqlProxy.autoIamAuthn }}
+        - "--auto-iam-authn"
+        {{- end }}
       {{- end }}
       - name: migration
         image: {{ include "maestro-server.image" . }}
