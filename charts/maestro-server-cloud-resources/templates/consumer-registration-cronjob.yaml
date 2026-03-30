@@ -27,16 +27,21 @@ data:
     echo "Maestro URL    : ${MAESTRO_URL}"
 
     # Discover consumers: list SM secrets with the maestro-consumer-name label.
+    # stderr is captured to a temp file so gcloud warnings don't pollute the output.
+    _gcloud_err=$(mktemp)
     CONSUMER_NAMES=$(gcloud secrets list \
       --project="${GCP_PROJECT_ID}" \
       --filter='labels.maestro-consumer-name:*' \
-      --format='value(labels.maestro-consumer-name)' 2>&1)
-    if [ $? -ne 0 ]; then
+      --format='value(labels.maestro-consumer-name)' 2>"${_gcloud_err}")
+    _gcloud_exit=$?
+    if [ "${_gcloud_exit}" -ne 0 ]; then
       echo "WARN: failed to list secrets in ${GCP_PROJECT_ID}:"
-      echo "      ${CONSUMER_NAMES}"
+      cat "${_gcloud_err}"
       echo "      will retry on the next iteration"
+      rm -f "${_gcloud_err}"
       exit 0
     fi
+    rm -f "${_gcloud_err}"
     CONSUMER_NAMES=$(echo "${CONSUMER_NAMES}" | grep -v '^$' || true)
 
     if [ -z "${CONSUMER_NAMES}" ]; then
